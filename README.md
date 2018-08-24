@@ -1,6 +1,6 @@
 # SocketPacket
-游戏协议数据抓取解析工具
 
+## 游戏协议数据抓取解析工具
 只要将所有的proto放进去，然后修改ProtobufData.py文件，将消息id和消息名字对应上，就可以在工具里显示出每条消息的详细内容。
 
 ### 项目说明
@@ -16,6 +16,7 @@
 
 ProtobufData.py格式参考：
 
+```python
 ServerData = \
 {
     10001: ["TestMessage"],
@@ -32,3 +33,4 @@ ProtobufData = (
         "data": ServerData
     },
 )
+```
