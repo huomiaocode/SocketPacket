@@ -1,8 +1,9 @@
 # $Id: hsrp.py 23 2006-11-08 15:45:33Z dugsong $
-
+# -*- coding: utf-8 -*-
 """Cisco Hot Standby Router Protocol."""
+from __future__ import absolute_import
 
-import dpkt
+from . import dpkt
 
 # Opcodes
 HELLO = 0
@@ -17,7 +18,17 @@ SPEAK = 0x04
 STANDBY = 0x08
 ACTIVE = 0x10
 
+
 class HSRP(dpkt.Packet):
+    """Cisco Hot Standby Router Protocol.
+
+    TODO: Longer class information....
+
+    Attributes:
+        __hdr__: Header fields of HSRP.
+        TODO.
+    """
+    
     __hdr__ = (
         ('version', 'B', 0),
         ('opcode', 'B', 0),

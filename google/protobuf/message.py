@@ -1,6 +1,6 @@
 # Protocol Buffers - Google's data interchange format
 # Copyright 2008 Google Inc.  All rights reserved.
-# http://code.google.com/p/protobuf/
+# https://developers.google.com/protocol-buffers/
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are
@@ -35,7 +35,6 @@
 """Contains an abstract base class for protocol messages."""
 
 __author__ = 'robinson@google.com (Will Robinson)'
-
 
 class Error(Exception): pass
 class DecodeError(Error): pass
@@ -73,6 +72,7 @@ class Message(object):
     return clone
 
   def __eq__(self, other_msg):
+    """Recursively compares two messages by value and structure."""
     raise NotImplementedError
 
   def __ne__(self, other_msg):
@@ -83,9 +83,11 @@ class Message(object):
     raise TypeError('unhashable object')
 
   def __str__(self):
+    """Outputs a human-readable representation of the message."""
     raise NotImplementedError
 
   def __unicode__(self):
+    """Outputs a human-readable representation of the message."""
     raise NotImplementedError
 
   def MergeFrom(self, other_msg):
@@ -170,16 +172,28 @@ class Message(object):
       we *do* stop because of an END_GROUP tag, the number
       of bytes returned does not include the bytes
       for the END_GROUP tag information.
+
+    Raises:
+      message.DecodeError if the input cannot be parsed.
     """
     raise NotImplementedError
 
   def ParseFromString(self, serialized):
-    """Like MergeFromString(), except we clear the object first."""
-    self.Clear()
-    self.MergeFromString(serialized)
+    """Parse serialized protocol buffer data into this message.
 
-  def SerializeToString(self):
+    Like MergeFromString(), except we clear the object first.
+    """
+    self.Clear()
+    return self.MergeFromString(serialized)
+
+  def SerializeToString(self, **kwargs):
     """Serializes the protocol message to a binary string.
+
+    Arguments:
+      **kwargs: Keyword arguments to the serialize method, accepts
+        the following keyword args:
+        deterministic: If true, requests deterministic serialization of the
+          protobuf, with predictable ordering of map keys.
 
     Returns:
       A binary string representation of the message if all of the required
@@ -190,11 +204,17 @@ class Message(object):
     """
     raise NotImplementedError
 
-  def SerializePartialToString(self):
+  def SerializePartialToString(self, **kwargs):
     """Serializes the protocol message to a binary string.
 
     This method is similar to SerializeToString but doesn't check if the
     message is initialized.
+
+    Arguments:
+      **kwargs: Keyword arguments to the serialize method, accepts
+        the following keyword args:
+        deterministic: If true, requests deterministic serialization of the
+          protobuf, with predictable ordering of map keys.
 
     Returns:
       A string representation of the partial message.
@@ -219,25 +239,42 @@ class Message(object):
   # """
   def ListFields(self):
     """Returns a list of (FieldDescriptor, value) tuples for all
-    fields in the message which are not empty.  A singular field is non-empty
-    if HasField() would return true, and a repeated field is non-empty if
-    it contains at least one element.  The fields are ordered by field
-    number"""
+    fields in the message which are not empty.  A message field is
+    non-empty if HasField() would return true. A singular primitive field
+    is non-empty if HasField() would return true in proto2 or it is non zero
+    in proto3. A repeated field is non-empty if it contains at least one
+    element.  The fields are ordered by field number"""
     raise NotImplementedError
 
   def HasField(self, field_name):
-    """Checks if a certain field is set for the message. Note if the
-    field_name is not defined in the message descriptor, ValueError will be
-    raised."""
+    """Checks if a certain field is set for the message, or if any field inside
+    a oneof group is set.  Note that if the field_name is not defined in the
+    message descriptor, ValueError will be raised."""
     raise NotImplementedError
 
   def ClearField(self, field_name):
+    """Clears the contents of a given field, or the field set inside a oneof
+    group.  If the name neither refers to a defined field or oneof group,
+    ValueError is raised."""
+    raise NotImplementedError
+
+  def WhichOneof(self, oneof_group):
+    """Returns the name of the field that is set inside a oneof group, or
+    None if no field is set.  If no group with the given name exists, ValueError
+    will be raised."""
     raise NotImplementedError
 
   def HasExtension(self, extension_handle):
     raise NotImplementedError
 
   def ClearExtension(self, extension_handle):
+    raise NotImplementedError
+
+  def UnknownFields(self):
+    """Returns the UnknownFieldSet."""
+    raise NotImplementedError
+
+  def DiscardUnknownFields(self):
     raise NotImplementedError
 
   def ByteSize(self):
@@ -266,3 +303,17 @@ class Message(object):
     via a previous _SetListener() call.
     """
     raise NotImplementedError
+
+  def __getstate__(self):
+    """Support the pickle protocol."""
+    return dict(serialized=self.SerializePartialToString())
+
+  def __setstate__(self, state):
+    """Support the pickle protocol."""
+    self.__init__()
+    serialized = state['serialized']
+    # On Python 3, using encoding='latin1' is required for unpickling
+    # protos pickled by Python 2.
+    if not isinstance(serialized, bytes):
+      serialized = serialized.encode('latin1')
+    self.ParseFromString(serialized)

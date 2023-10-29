@@ -1,14 +1,25 @@
 # $Id: ospf.py 23 2006-11-08 15:45:33Z dugsong $
-
+# -*- coding: utf-8 -*-
 """Open Shortest Path First."""
+from __future__ import absolute_import
 
-import dpkt
+from . import dpkt
 
 AUTH_NONE = 0
 AUTH_PASSWORD = 1
 AUTH_CRYPTO = 2
 
+
 class OSPF(dpkt.Packet):
+    """Open Shortest Path First.
+
+    TODO: Longer class information....
+
+    Attributes:
+        __hdr__: Header fields of OSPF.
+        TODO.
+    """
+
     __hdr__ = (
         ('v', 'B', 0),
         ('type', 'B', 0),
@@ -18,8 +29,9 @@ class OSPF(dpkt.Packet):
         ('sum', 'H', 0),
         ('atype', 'H', 0),
         ('auth', '8s', '')
-        )
-    def __str__(self):
+    )
+
+    def __bytes__(self):
         if not self.sum:
-            self.sum = dpkt.in_cksum(dpkt.Packet.__str__(self))
-        return dpkt.Packet.__str__(self)
+            self.sum = dpkt.in_cksum(dpkt.Packet.__bytes__(self))
+        return dpkt.Packet.__bytes__(self)

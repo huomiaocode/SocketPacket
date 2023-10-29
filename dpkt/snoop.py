@@ -1,32 +1,42 @@
 # $Id$
-
+# -*- coding: utf-8 -*-
 """Snoop file format."""
+from __future__ import absolute_import
 
-import sys, time
-import dpkt
+import time
+
+from . import dpkt
 
 # RFC 1761
 
-SNOOP_MAGIC = 0x736E6F6F70000000L
+SNOOP_MAGIC = 0x736E6F6F70000000
 
 SNOOP_VERSION = 2
 
-SDL_8023   = 0
-SDL_8024   = 1
-SDL_8025   = 2
-SDL_8026   = 3
-SDL_ETHER  = 4
-SDL_HDLC   = 5
+SDL_8023 = 0
+SDL_8024 = 1
+SDL_8025 = 2
+SDL_8026 = 3
+SDL_ETHER = 4
+SDL_HDLC = 5
 SDL_CHSYNC = 6
-SDL_IBMCC  = 7
-SDL_FDDI   = 8
-SDL_OTHER  = 9
+SDL_IBMCC = 7
+SDL_FDDI = 8
+SDL_OTHER = 9
 
+dltoff = {SDL_ETHER: 14}
 
-dltoff = { SDL_ETHER:14 }
 
 class PktHdr(dpkt.Packet):
-    """snoop packet header."""
+    """snoop packet header.
+
+    TODO: Longer class information....
+
+    Attributes:
+        __hdr__: Header fields of snoop packet header.
+        TODO.
+    """
+
     __byte_order__ = '!'
     __hdr__ = (
         ('orig_len', 'I', 0),
@@ -35,19 +45,36 @@ class PktHdr(dpkt.Packet):
         ('cum_drops', 'I', 0),
         ('ts_sec', 'I', 0),
         ('ts_usec', 'I', 0),
-        )
+    )
+
 
 class FileHdr(dpkt.Packet):
-    """snoop file header."""
+    """snoop file header.
+
+    TODO: Longer class information....
+
+    Attributes:
+        __hdr__: Header fields of snoop file header.
+        TODO.
+    """
+
     __byte_order__ = '!'
     __hdr__ = (
         ('magic', 'Q', SNOOP_MAGIC),
         ('v', 'I', SNOOP_VERSION),
         ('linktype', 'I', SDL_ETHER),
-        )
+    )
+
 
 class Writer(object):
-    """Simple snoop dumpfile writer."""
+    """Simple snoop dumpfile writer.
+
+    TODO: Longer class information....
+
+    Attributes:
+        TODO.
+    """
+
     def __init__(self, fileobj, linktype=SDL_ETHER):
         self.__f = fileobj
         fh = FileHdr(linktype=linktype)
@@ -59,8 +86,8 @@ class Writer(object):
         s = str(pkt)
         n = len(s)
         pad_len = 4 - n % 4 if n % 4 else 0
-        ph = PktHdr(orig_len=n,incl_len=n,
-                    rec_len=PktHdr.__hdr_len__+n+pad_len,
+        ph = PktHdr(orig_len=n, incl_len=n,
+                    rec_len=PktHdr.__hdr_len__ + n + pad_len,
                     ts_sec=int(ts),
                     ts_usec=int((int(ts) - float(ts)) * 1000000.0))
         self.__f.write(str(ph))
@@ -69,9 +96,16 @@ class Writer(object):
     def close(self):
         self.__f.close()
 
+
 class Reader(object):
-    """Simple pypcap-compatible snoop file reader."""
-    
+    """Simple pypcap-compatible snoop file reader.
+
+    TODO: Longer class information....
+
+    Attributes:
+        TODO.
+    """
+
     def __init__(self, fileobj):
         self.name = fileobj.name
         self.fd = fileobj.fileno()
@@ -80,26 +114,26 @@ class Reader(object):
         self.__fh = FileHdr(buf)
         self.__ph = PktHdr
         if self.__fh.magic != SNOOP_MAGIC:
-            raise ValueError, 'invalid snoop header'
+            raise ValueError('invalid snoop header')
         self.dloff = dltoff[self.__fh.linktype]
         self.filter = ''
 
     def fileno(self):
         return self.fd
-    
+
     def datalink(self):
         return self.__fh.linktype
-    
+
     def setfilter(self, value, optimize=1):
         return NotImplementedError
 
     def readpkts(self):
         return list(self)
-    
+
     def dispatch(self, cnt, callback, *args):
         if cnt > 0:
             for i in range(cnt):
-                ts, pkt = self.next()
+                ts, pkt = next(self)
                 callback(ts, pkt, *args)
         else:
             for ts, pkt in self:
@@ -107,7 +141,7 @@ class Reader(object):
 
     def loop(self, callback, *args):
         self.dispatch(0, callback, *args)
-    
+
     def __iter__(self):
         self.__f.seek(FileHdr.__hdr_len__)
         while 1:

@@ -1,6 +1,8 @@
+syntax = "proto3";
+
 // 10001
 message TestMessage {
-	optional uint32 id = 1;
-	optional string name = 2;
-	optional string icon = 3;
+	uint32 id = 1;
+	string name = 2;
+	string icon = 3;
 }

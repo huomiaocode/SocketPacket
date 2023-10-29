@@ -1,24 +1,55 @@
 # $Id: pim.py 23 2006-11-08 15:45:33Z dugsong $
-
+# -*- coding: utf-8 -*-
 """Protocol Independent Multicast."""
+from __future__ import absolute_import
 
-import dpkt
+from . import dpkt
+from .decorators import deprecated
+
 
 class PIM(dpkt.Packet):
+    """Protocol Independent Multicast.
+
+    TODO: Longer class information....
+
+    Attributes:
+        __hdr__: Header fields of PIM.
+        TODO.
+    """
+
     __hdr__ = (
-        ('v_type', 'B', 0x20),
+        ('_v_type', 'B', 0x20),
         ('rsvd', 'B', 0),
         ('sum', 'H', 0)
-        )
-    def _get_v(self): return self.v_type >> 4
-    def _set_v(self, v): self.v_type = (v << 4) | (self.v_type & 0xf)
-    v = property(_get_v, _set_v)
-    
-    def _get_type(self): return self.v_type & 0xf
-    def _set_type(self, type): self.v_type = (self.v_type & 0xf0) | type
-    type = property(_get_type, _set_type)
+    )
 
-    def __str__(self):
+    @property
+    def v(self):
+        return self._v_type >> 4
+
+    @v.setter
+    def v(self, v):
+        self._v_type = (v << 4) | (self._v_type & 0xf)
+
+    @property
+    def type(self):
+        return self._v_type & 0xf
+
+    @type.setter
+    def type(self, type):
+        self._v_type = (self._v_type & 0xf0) | type
+
+    def __bytes__(self):
         if not self.sum:
-            self.sum = dpkt.in_cksum(dpkt.Packet.__str__(self))
-        return dpkt.Packet.__str__(self)
+            self.sum = dpkt.in_cksum(dpkt.Packet.__bytes__(self))
+        return dpkt.Packet.__bytes__(self)
+
+def test_pim():
+    pimdata =  PIM(b'\x20\x00\x9f\xf4\x00\x01\x00\x02\x00\x69')
+    assert pimdata.v == 2
+    assert pimdata.type == 0
+
+    # test setters
+    pimdata.v = 3
+    pimdata.type = 1
+    assert bytes(pimdata) == b'\x31\x00\x9f\xf4\x00\x01\x00\x02\x00\x69'
